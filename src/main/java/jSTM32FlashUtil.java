@@ -21,14 +21,24 @@ public class jSTM32FlashUtil {
             e.printStackTrace();
             return;
         }
-
-        STM32Flasher flasher = new STM32Flasher(new JsscSerialIface(sp));
+        JsscSerialIface jsscIface = new JsscSerialIface(sp);
+        STM32Flasher flasher = new STM32Flasher(jsscIface);
 
         try {
-            flasher.connect();
+            if (!flasher.connect()) {
+                System.out.println("could not connect");
+                return;
+            }
+
             STM32Device d = flasher.getDevice();
             System.out.println("Connected to " + d);
-            flasher.erase();
+
+            jsscIface.setDebug(true);
+            if (!flasher.erase()) {
+                System.out.println("could not erase");
+                return;
+            }
+
             //flasher.flashFirmware();
             flasher.dumpFirmware();
             flasher.reset();
@@ -46,7 +56,7 @@ public class jSTM32FlashUtil {
 
     private static class JsscSerialIface extends STM32UsartInterface {
         private final SerialPort mSerialPort;
-        boolean mDebug = false;
+        boolean mDebug = true;
 
         public JsscSerialIface(SerialPort sp) {
             mSerialPort = sp;
@@ -92,8 +102,8 @@ public class jSTM32FlashUtil {
             }
         }
 
-        public void setDebug(boolean mDebug) {
-            this.mDebug = mDebug;
+        public void setDebug(boolean d) {
+            this.mDebug = d;
         }
     }
 
