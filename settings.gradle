@@ -1,2 +1,4 @@
-rootProject.name = 'jstm32flash-util'
+rootProject.name = 'stm32flash-util'
 
+include 'stm32flash-lib'
+project(':stm32flash-lib').projectDir = new File('../jstm32flash-lib')
