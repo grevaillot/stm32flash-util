@@ -143,7 +143,7 @@ public class STM32FlashUtil {
                     read += len;
                 }
                 */
-                byte[] buffer = mSerialPort.readBytes(count, 3000);
+                byte[] buffer = mSerialPort.readBytes(count, 1000);
                 if (mDebug)
                     System.out.println("read bytes " + Hex.encodeHexString( buffer ));
                 return buffer;
