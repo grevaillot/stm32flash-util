@@ -111,7 +111,7 @@ public class STM32FlashUtil {
 
                 System.out.println("Loaded " + fw + ", md5=" + Hex.encodeHexString( fw.getChecksum() ));
 
-                flasher.flashFirmware(fw.getBuffer(), doVerify);
+                flasher.flashFirmware(fw.getBuffer(), STM32Flasher.EraseMode.Partial, doVerify);
             }
 
             if (doReset)
