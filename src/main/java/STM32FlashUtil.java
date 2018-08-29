@@ -1,6 +1,7 @@
 import gnu.getopt.Getopt;
 import jssc.SerialPort;
 import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 
@@ -8,6 +9,7 @@ import org.stm32flash.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 public class STM32FlashUtil {
     public static void main(String[] args) {
@@ -105,7 +107,8 @@ public class STM32FlashUtil {
 
             if (doReset)
                 flasher.resetDevice();
-
+        } catch (TimeoutException e) {
+            System.err.println(e);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -127,42 +130,18 @@ public class STM32FlashUtil {
         }
 
         @Override
-        public byte read() throws IOException {
-            byte[] b = read(1);
-            return b[0];
-        }
-
-        @Override
-        public byte[] read(int count) throws IOException {
+        public byte[] read(int count, int timeout) throws IOException, TimeoutException {
             try {
-                /*
-                byte buffer[] = new byte[count];
-                int read = 0;
-                while (read < count) {
-                    int len = min(count - read, 128);
-                    byte[] b = mSerialPort.readBytes(len, 1000);
-                    System.arraycopy(b, 0, buffer, read, len);
-                    read += len;
-                }
-                */
-                byte[] buffer = mSerialPort.readBytes(count, 1000);
+                byte[] buffer = mSerialPort.readBytes(count, timeout);
+
                 if (mDebug)
                     System.out.println("read bytes " + Hex.encodeHexString( buffer ));
+
                 return buffer;
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-
-
-        @Override
-        public void write(byte b) throws IOException {
-            if (mDebug)
-                System.out.println("write byte " + Byte.toUnsignedInt(b));
-            try {
-                mSerialPort.writeByte(b);
             } catch (SerialPortException e) {
                 throw new IOException(e);
+            } catch (SerialPortTimeoutException e) {
+                throw new TimeoutException("Timeout " + e.getMethodName() + " on " + e.getPortName() + " (" + + e.getTimeoutValue() + "ms)" );
             }
         }
 
@@ -181,8 +160,6 @@ public class STM32FlashUtil {
             this.mDebug = d;
         }
     }
-
-
 }
 
 
