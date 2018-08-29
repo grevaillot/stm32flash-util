@@ -74,7 +74,7 @@ public class STM32FlashUtil {
             sp.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
         } catch (SerialPortException e) {
             e.printStackTrace();
-            return;
+            exit(-2);
         }
 
         JsscSerialIface jsscIface = new JsscSerialIface(sp, verbose > 1);
@@ -84,11 +84,13 @@ public class STM32FlashUtil {
         try {
             if (!flasher.connect()) {
                 System.err.println("Could not connect to target.");
-                return;
+                exit(-2);
             }
 
             STM32Device d = flasher.getDevice();
-            System.out.println("Connected to " + d);
+            System.out.println("Connected to " + d.getName() + " / 0x" + Integer.toHexString(d.getId()));
+            if (verbose > 0)
+                System.out.println("DeviceInfo: " + d);
 
             if (doDump) {
                 System.out.println("Dumping target firmware.");
@@ -96,6 +98,9 @@ public class STM32FlashUtil {
                 if (dumpFilename != null) {
                     System.out.println("Saving firmware to " + dumpFilename);
                     FileUtils.writeByteArrayToFile(new File(dumpFilename), buffer);
+                } else {
+                    System.err.println("Could not dump target firmware.");
+                    exit(-1);
                 }
             }
 
@@ -137,25 +142,33 @@ public class STM32FlashUtil {
             if (doFlash) {
                 System.out.println("Flashing " + flashFilename + " to target.");
 
-                STM32Firmware fw;
+                STM32Firmware fw = null;
                 try {
                     fw = new STM32Firmware(flashFilename);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return;
+                    exit(-1);
                 }
 
                 System.out.println("Loaded " + fw + ", md5=" + Hex.encodeHexString( fw.getChecksum() ));
+                if (!flasher.flashFirmware(fw.getBuffer(), STM32Flasher.EraseMode.Partial, doVerify)) {
+                    System.err.println("Firmware flashing failed.");
+                    exit(-1);
+                }
 
-                flasher.flashFirmware(fw.getBuffer(), STM32Flasher.EraseMode.Partial, doVerify);
+                System.out.println("Firmware was flashed successfully.");
             }
 
-            if (doReset)
-                flasher.resetDevice();
+            if (doReset) {
+                if (flasher.resetDevice())
+                    exit(-1);
+            }
         } catch (TimeoutException e) {
             System.err.println(e);
+            exit(-1);
         } catch (IOException e) {
             e.printStackTrace();
+            exit(-1);
         }
 
         try {
@@ -164,6 +177,7 @@ public class STM32FlashUtil {
             e.printStackTrace();
         }
 
+        exit(0);
     }
 
     private static class JsscSerialIface extends STM32UsartInterface {
