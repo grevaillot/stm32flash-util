@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import static java.lang.System.exit;
+
 public class STM32FlashUtil {
     public static void main(String[] args) {
         String port = "/dev/ttyUSB0";
@@ -19,13 +21,14 @@ public class STM32FlashUtil {
         String flashFilename = "/tmp/fw.bin";
         boolean doReset = false;
         boolean doErase = false;
+        String partialEraseRange = null;
         boolean doFlash = false;
         boolean doVerify = false;
         boolean doDump = false;
 
         int verbose = 0;
 
-        final Getopt getopt = new Getopt("STM32FlashUtil", args, "ervf:p:d:b:V");
+        final Getopt getopt = new Getopt("stm32flash-util", args, "eE:rvf:p:d:b:V");
 
         int arg = -1;
         while ((arg = getopt.getopt()) != -1) {
@@ -33,6 +36,9 @@ public class STM32FlashUtil {
                 case 'b':
                     baudRate = Integer.parseInt(getopt.getOptarg());
                     break;
+                case 'E':
+                    partialEraseRange = getopt.getOptarg();
+                    // fallthrough
                 case 'e':
                     doErase = true;
                     break;
@@ -94,8 +100,38 @@ public class STM32FlashUtil {
             }
 
             if (doErase) {
-                System.out.println("Erasing target firmware.");
-                flasher.eraseFirmware();
+                if (partialEraseRange != null) {
+                    String[] params = partialEraseRange.split(":");
+
+                    if (params.length != 2) {
+                        System.err.println("bad partial erase parameter, expecting \"startaddress:lenght\" : " + partialEraseRange);
+                        exit(-1);
+                    }
+
+                    int startAddress = Integer.decode(params[0]);
+                    int len = Integer.decode(params[1]);
+
+                    if (startAddress == 0)
+                        startAddress = d.getFlashStart();
+
+                    if (startAddress < d.getFlashStart()) {
+                        System.err.println("bad partial erase parameter, start address is below flash start.");
+                        exit(-1);
+                    }
+
+                    if (startAddress + len > d.getFlashStart() + d.getFlashSize()) {
+                        System.err.println("bad partial erase parameter, end address is after flash end.");
+                        exit(-1);
+                    }
+
+                    System.out.println("Erasing target from 0x" + Integer.toHexString(startAddress) + " to 0x" + Integer.toHexString(startAddress+len) );
+                    if (!flasher.erase(startAddress, len))
+                        exit(-1);
+                } else {
+                    System.out.println("Erasing target firmware.");
+                    if (!flasher.eraseFirmware())
+                        exit(-1);
+                }
             }
 
             if (doFlash) {
