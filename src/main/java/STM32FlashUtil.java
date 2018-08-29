@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 public class STM32FlashUtil {
     public static void main(String[] args) {
         String port = "/dev/ttyUSB0";
+        int baudRate = SerialPort.BAUDRATE_256000;
         String dumpFilename = "/tmp/fw.bin";
         String flashFilename = "/tmp/fw.bin";
         boolean doReset = false;
@@ -22,11 +23,16 @@ public class STM32FlashUtil {
         boolean doVerify = false;
         boolean doDump = false;
 
-        final Getopt getopt = new Getopt("STM32FlashUtil", args, "ervf:p:d:");
+        int verbose = 0;
+
+        final Getopt getopt = new Getopt("STM32FlashUtil", args, "ervf:p:d:b:V");
 
         int arg = -1;
         while ((arg = getopt.getopt()) != -1) {
             switch (arg) {
+                case 'b':
+                    baudRate = Integer.parseInt(getopt.getOptarg());
+                    break;
                 case 'e':
                     doErase = true;
                     break;
@@ -47,24 +53,27 @@ public class STM32FlashUtil {
                 case 'p':
                     port = getopt.getOptarg();
                     break;
+                case 'V':
+                    verbose++;
+                    break;
             }
         }
 
-        System.out.println("STM32FlashUtil " + port);
+        System.out.println("stm32flash-util " + port + " at " + baudRate + "bps");
 
         SerialPort sp = new SerialPort(port);
 
         try {
             sp.openPort();
-            sp.setParams(SerialPort.BAUDRATE_256000, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
+            sp.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
         } catch (SerialPortException e) {
             e.printStackTrace();
             return;
         }
 
-        JsscSerialIface jsscIface = new JsscSerialIface(sp);
+        JsscSerialIface jsscIface = new JsscSerialIface(sp, verbose > 1);
 
-        STM32Flasher flasher = new STM32Flasher(jsscIface);
+        STM32Flasher flasher = new STM32Flasher(jsscIface, verbose > 0);
 
         try {
             if (!flasher.connect()) {
@@ -125,8 +134,9 @@ public class STM32FlashUtil {
         private final SerialPort mSerialPort;
         boolean mDebug = false;
 
-        public JsscSerialIface(SerialPort sp) {
+        public JsscSerialIface(SerialPort sp, boolean debug) {
             mSerialPort = sp;
+            mDebug = debug;
         }
 
         @Override

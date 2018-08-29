@@ -5,12 +5,15 @@ Java based simple "stm2flash" console tool using [stm32flash-lib](https://github
 ## Usage:
 ### Options:
     ./stm32flash-util
-        -e                      erase target flash memory                       
-        -f "path/to/file.bin"   flash file to target flash memory               
-        -r                      reset target after operation                    
+        -e                      erase target flash memory
+        -f "path/to/file.bin"   flash file to target flash memory
+        -r                      reset target after operation
         -v                      verify flash content while flashing             
-        -p /dev/ttyUSB42        specify tty to use                                                             
-        -d "path/to/file.bin"	dump target flash memory to file                 
+        -p /dev/ttyUSB42        specify tty to use
+        -b 115200               specify baudrate to use
+        -d "path/to/file.bin"	dump target flash memory to file
+        -V                      verbose
+        -VV                     more verbose
 
 ### Example:
 	./stm32flash-utl -p /dev/ttyUSB12 -e -f firmware.bin  -v
