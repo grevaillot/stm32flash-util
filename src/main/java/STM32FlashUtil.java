@@ -4,6 +4,8 @@ import jssc.SerialPortException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 
+import org.stm32flash.*;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -154,7 +156,7 @@ public class STM32FlashUtil {
 
 
         @Override
-        void write(byte b) throws IOException {
+        public void write(byte b) throws IOException {
             if (mDebug)
                 System.out.println("write byte " + Byte.toUnsignedInt(b));
             try {
@@ -165,7 +167,7 @@ public class STM32FlashUtil {
         }
 
         @Override
-        void write(byte[] bytes) throws IOException {
+        public void write(byte[] bytes) throws IOException {
             if (mDebug)
                 System.out.println("write bytes " + Hex.encodeHexString( bytes));
             try {
