@@ -81,6 +81,20 @@ public class STM32FlashUtil {
 
         STM32Flasher flasher = new STM32Flasher(jsscIface, verbose > 0);
 
+        flasher.registerProgressListener(new STM32OperationProgressListener() {
+            @Override
+            public void completed(boolean successfull) {
+                if (!successfull)
+                    System.err.println("failure");
+                else
+                    System.err.println("done");
+            }
+
+            @Override
+            public void progress(long current, long total) {
+                System.out.println("progress: " + current + " of " + total);
+            }
+        });
         try {
             if (!flasher.connect()) {
                 System.err.println("Could not connect to target.");
