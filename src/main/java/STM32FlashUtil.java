@@ -209,7 +209,7 @@ public class STM32FlashUtil {
                 byte[] buffer = mSerialPort.readBytes(count, timeout);
 
                 if (mDebug)
-                    System.out.println("read bytes " + Hex.encodeHexString( buffer ));
+                    System.out.println("read bytes 0x" + Hex.encodeHexString( buffer ));
 
                 return buffer;
             } catch (SerialPortException e) {
@@ -222,7 +222,7 @@ public class STM32FlashUtil {
         @Override
         public void write(byte[] bytes) throws IOException {
             if (mDebug)
-                System.out.println("write bytes " + Hex.encodeHexString( bytes));
+                System.out.println("write bytes 0x" + Hex.encodeHexString( bytes));
             try {
                 mSerialPort.writeBytes(bytes);
             } catch (SerialPortException e) {
