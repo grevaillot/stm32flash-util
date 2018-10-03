@@ -1,6 +1,6 @@
 # stm32flash-util
 
-Java based simple "stm32flash" console tool using [stm32flash-lib](https://github.com/grevaillot/stm32flash-lib), a java based library to talk to stm32 UART bootloader following [AN3155](https://www.st.com/resource/en/application_note/cd00264342.pdf)
+Java based simple "stm32flash" console tool using [stm32flash-lib](https://github.com/grevaillot/stm32flash-lib), a java based library to talk to stm32 UART bootloader following [AN3155](https://www.st.com/resource/en/application_note/cd00264342.pdf), allowing you to erase, write, verify and dump flash memory.
 
 ## Usage:
 ### Options:
@@ -18,3 +18,7 @@ Java based simple "stm32flash" console tool using [stm32flash-lib](https://githu
 
 ### Example:
 	./stm32flash-utl -b 115200 -p /dev/ttyUSB12 -f firmware.bin  -v
+
+## Notes:
+
+See [stm32flash-lib](https://github.com/grevaillot/stm32flash-lib).
