@@ -169,12 +169,16 @@ public class STM32FlashUtil {
                     }
 
                     System.out.println("Erasing target from 0x" + Integer.toHexString(startAddress) + " to 0x" + Integer.toHexString(startAddress+len) );
-                    if (!flasher.erase(startAddress, len))
+                    if (!flasher.erase(startAddress, len)) {
+                        System.err.println("Could not erase flash.");
                         exit(-1);
+                    }
                 } else {
                     System.out.println("Erasing target firmware.");
-                    if (!flasher.eraseFirmware())
+                    if (!flasher.eraseFirmware()) {
+                        System.err.println("Could not erase flash.");
                         exit(-1);
+                    }
                 }
             }
 
