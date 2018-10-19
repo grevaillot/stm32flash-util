@@ -14,6 +14,24 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.System.exit;
 
 public class STM32FlashUtil {
+    private static void help() {
+
+        System.out.println("./stm32flash-util\n" +
+                "\t-f path/to/file.bin     flash file to target flash memory\n" +
+                "\t-p /dev/ttyUSB42        specify tty to use\n" +
+                "\t-b 115200               specify baudrate to use\n" +
+                "\t-v                      verify flash content while flashing\n" +
+                "\t-r                      reset target after operation\n" +
+                "\t-d path/to/file.bin 	 dump target flash memory to file\n" +
+                "\t-e                      erase target flash memory\n" +
+                "\t-E 0x8000000:0x200      erase 0x200 bytes of flash memory from 0x8000000\n" +
+                "\t-V                      verbose\n" +
+                "\t-VV                     more verbose\n" +
+                "\t-h                      print help\n"
+        );
+    }
+
+
     public static void main(String[] args) {
         String port = "/dev/ttyUSB0";
         int baudRate = SerialPort.BAUDRATE_256000;
@@ -28,7 +46,7 @@ public class STM32FlashUtil {
 
         int verbose = 0;
 
-        final Getopt getopt = new Getopt("stm32flash-util", args, "eE:rvf:p:d:b:V");
+        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:rvf:p:d:b:V");
 
         int arg = -1;
         while ((arg = getopt.getopt()) != -1) {
@@ -62,6 +80,13 @@ public class STM32FlashUtil {
                 case 'V':
                     verbose++;
                     break;
+                case 'h':
+                    help();
+                    exit(0);
+                    break;
+                default:
+                    help();
+                    exit(1);
             }
         }
 
