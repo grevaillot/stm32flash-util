@@ -10,9 +10,10 @@ Java based simple "stm32flash" console tool using [stm32flash-lib](https://githu
         -b 115200               specify baudrate to use
         -v                      verify flash content while flashing
         -r                      reset target after operation
-        -d path/to/file.bin 	dump target flash memory to file
+        -d path/to/file.bin     dump target flash memory to file
         -e                      erase target flash memory
         -E 0x8000000:0x200      erase 0x200 bytes of flash memory from 0x8000000 
+        -S 32k                  specify device flash size
         -V                      verbose
         -VV                     more verbose
 

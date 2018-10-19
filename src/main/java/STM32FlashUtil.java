@@ -22,9 +22,10 @@ public class STM32FlashUtil {
                 "\t-b 115200               specify baudrate to use\n" +
                 "\t-v                      verify flash content while flashing\n" +
                 "\t-r                      reset target after operation\n" +
-                "\t-d path/to/file.bin 	 dump target flash memory to file\n" +
+                "\t-d path/to/file.bin     dump target flash memory to file\n" +
                 "\t-e                      erase target flash memory\n" +
                 "\t-E 0x8000000:0x200      erase 0x200 bytes of flash memory from 0x8000000\n" +
+                "\t-S 32k                  specify device flash size\n" +
                 "\t-V                      verbose\n" +
                 "\t-VV                     more verbose\n" +
                 "\t-h                      print help\n"
@@ -40,13 +41,14 @@ public class STM32FlashUtil {
         boolean doReset = false;
         boolean doErase = false;
         String partialEraseRange = null;
+        String flashSize = null;
         boolean doFlash = false;
         boolean doVerify = false;
         boolean doDump = false;
 
         int verbose = 0;
 
-        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:rvf:p:d:b:V");
+        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:rvf:p:d:b:VS:");
 
         int arg = -1;
         while ((arg = getopt.getopt()) != -1) {
@@ -66,6 +68,9 @@ public class STM32FlashUtil {
                 case 'f':
                     doFlash = true;
                     flashFilename = getopt.getOptarg();
+                    break;
+                case 'S':
+                    flashSize = getopt.getOptarg();
                     break;
                 case 'v':
                     doVerify = true;
@@ -127,6 +132,22 @@ public class STM32FlashUtil {
             }
 
             STM32Device d = flasher.getDevice();
+
+            if (flashSize != null) {
+                int size = 0;
+                if (flashSize.toLowerCase().endsWith("k"))
+                    size = Integer.decode(flashSize.substring(0, flashSize.length() - 1)) * 1024;
+                if (flashSize.toLowerCase().endsWith("kb"))
+                    size = Integer.decode(flashSize.substring(0, flashSize.length() - 2)) * 1024;
+                else if (flashSize.toLowerCase().endsWith("m"))
+                    size = Integer.decode(flashSize.substring(0, flashSize.length() - 1)) * 1024 * 1024;
+                else if (flashSize.toLowerCase().endsWith("mb"))
+                    size = Integer.decode(flashSize.substring(0, flashSize.length() - 2)) * 1024 * 1024;
+
+                System.out.println("Setting flash size to : " + size + "b");
+                d.setFlashSize(size);
+            }
+
             System.out.println("Connected to " + d.getName() + " / 0x" + Integer.toHexString(d.getId()));
             if (verbose > 0)
                 System.out.println("DeviceInfo: " + d);
