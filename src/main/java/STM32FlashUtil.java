@@ -137,12 +137,15 @@ public class STM32FlashUtil {
                 int size = 0;
                 if (flashSize.toLowerCase().endsWith("k"))
                     size = Integer.decode(flashSize.substring(0, flashSize.length() - 1)) * 1024;
-                if (flashSize.toLowerCase().endsWith("kb"))
+                else if (flashSize.toLowerCase().endsWith("kb"))
                     size = Integer.decode(flashSize.substring(0, flashSize.length() - 2)) * 1024;
                 else if (flashSize.toLowerCase().endsWith("m"))
                     size = Integer.decode(flashSize.substring(0, flashSize.length() - 1)) * 1024 * 1024;
                 else if (flashSize.toLowerCase().endsWith("mb"))
                     size = Integer.decode(flashSize.substring(0, flashSize.length() - 2)) * 1024 * 1024;
+                else
+                    size = Integer.decode(flashSize);
+
 
                 System.out.println("Setting flash size to : " + size + "b");
                 d.setFlashSize(size);
