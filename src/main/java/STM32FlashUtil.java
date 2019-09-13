@@ -21,7 +21,6 @@ public class STM32FlashUtil {
                 "\t-p /dev/ttyUSB42        specify tty to use\n" +
                 "\t-b 115200               specify baudrate to use\n" +
                 "\t-v                      verify flash content while flashing\n" +
-                "\t-r                      reset target after operation\n" +
                 "\t-d path/to/file.bin     dump target flash memory to file\n" +
                 "\t-e                      erase target flash memory\n" +
                 "\t-E 0x8000000:0x200      erase 0x200 bytes of flash memory from 0x8000000\n" +
@@ -61,9 +60,6 @@ public class STM32FlashUtil {
                     // fallthrough
                 case 'e':
                     doErase = true;
-                    break;
-                case 'r':
-                    doReset = true;
                     break;
                 case 'f':
                     doFlash = true;
