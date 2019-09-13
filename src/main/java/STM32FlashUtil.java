@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.System.exit;
 
 public class STM32FlashUtil {
+
     private static void help() {
 
         System.out.println("./stm32flash-util\n" +
@@ -24,6 +25,10 @@ public class STM32FlashUtil {
                 "\t-d path/to/file.bin     dump target flash memory to file\n" +
                 "\t-e                      erase target flash memory\n" +
                 "\t-E 0x8000000:0x200      erase 0x200 bytes of flash memory from 0x8000000\n" +
+                "\t-r                      lock target flash read\n" +
+                "\t-R                      unlock target flash read (will erase all flash)\n" +
+                "\t-l                      lock target flash write\n" +
+                "\t-L                      unlock target flash write\n" +
                 "\t-S 32k                  specify device flash size\n" +
                 "\t-V                      verbose\n" +
                 "\t-VV                     more verbose\n" +
@@ -44,10 +49,14 @@ public class STM32FlashUtil {
         boolean doFlash = false;
         boolean doVerify = false;
         boolean doDump = false;
+        boolean doLockFlashWrite = false;
+        boolean doLockFlashRead = false;
+        boolean doUnlockFlashWrite = false;
+        boolean doUnlockFlashRead = false;
 
         int verbose = 0;
 
-        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:rvf:p:d:b:VS:");
+        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:vf:p:d:LlRrub:VS:");
 
         int arg = -1;
         while ((arg = getopt.getopt()) != -1) {
@@ -74,6 +83,18 @@ public class STM32FlashUtil {
                 case 'd':
                     doDump = true;
                     dumpFilename = getopt.getOptarg();
+                    break;
+                case 'l':
+                    doLockFlashWrite = true;
+                    break;
+                case 'L':
+                    doUnlockFlashWrite = true;
+                    break;
+                case 'r':
+                    doLockFlashRead = true;
+                    break;
+                case 'R':
+                    doUnlockFlashRead = true;
                     break;
                 case 'p':
                     port = getopt.getOptarg();
@@ -163,6 +184,15 @@ public class STM32FlashUtil {
                 }
             }
 
+            if (doUnlockFlashRead)
+                if (flasher.unlockFlashRead())
+                    exit(-1);
+
+            if (doUnlockFlashWrite)
+                if (flasher.unlockFlashWrite())
+                    exit(-1);
+
+
             if (doErase) {
                 if (partialEraseRange != null) {
                     String[] params = partialEraseRange.split(":");
@@ -221,6 +251,14 @@ public class STM32FlashUtil {
 
                 System.out.println("Firmware was flashed successfully.");
             }
+
+            if (doLockFlashRead)
+                if (flasher.lockFlashRead())
+                    exit(-1);
+
+            if (doLockFlashWrite)
+                if (flasher.lockFlashWrite())
+                    exit(-1);
 
             if (doReset) {
                 if (flasher.resetDevice())
