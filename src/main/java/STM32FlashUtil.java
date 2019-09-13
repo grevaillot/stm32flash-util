@@ -9,9 +9,11 @@ import org.stm32flash.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.System.exit;
+import static java.lang.System.in;
 
 public class STM32FlashUtil {
 
@@ -54,62 +56,68 @@ public class STM32FlashUtil {
         boolean doUnlockFlashWrite = false;
         boolean doUnlockFlashRead = false;
 
+        ArrayList<Task> tasks = new ArrayList<Task>();
+
         int verbose = 0;
 
-        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:vf:p:d:LlRrub:VS:");
+        final Getopt getopt = new Getopt("stm32flash-util", args, "heE:f:F:p:d:LlRrub:VS:");
 
         int arg = -1;
-        while ((arg = getopt.getopt()) != -1) {
-            switch (arg) {
-                case 'b':
-                    baudRate = Integer.parseInt(getopt.getOptarg());
-                    break;
-                case 'E':
-                    partialEraseRange = getopt.getOptarg();
-                    // fallthrough
-                case 'e':
-                    doErase = true;
-                    break;
-                case 'f':
-                    doFlash = true;
-                    flashFilename = getopt.getOptarg();
-                    break;
-                case 'S':
-                    flashSize = getopt.getOptarg();
-                    break;
-                case 'v':
-                    doVerify = true;
-                    break;
-                case 'd':
-                    doDump = true;
-                    dumpFilename = getopt.getOptarg();
-                    break;
-                case 'l':
-                    doLockFlashWrite = true;
-                    break;
-                case 'L':
-                    doUnlockFlashWrite = true;
-                    break;
-                case 'r':
-                    doLockFlashRead = true;
-                    break;
-                case 'R':
-                    doUnlockFlashRead = true;
-                    break;
-                case 'p':
-                    port = getopt.getOptarg();
-                    break;
-                case 'V':
-                    verbose++;
-                    break;
-                case 'h':
-                    help();
-                    exit(0);
-                    break;
-                default:
-                    help();
-                    exit(1);
+        try {
+            while ((arg = getopt.getopt()) != -1) {
+                switch (arg) {
+                    case 'b':
+                        baudRate = Integer.parseInt(getopt.getOptarg());
+                        break;
+                    case 'p':
+                        port = getopt.getOptarg();
+                        break;
+                    case 'S':
+                        flashSize = getopt.getOptarg();
+                        break;
+                    case 'V':
+                        verbose++;
+                        break;
+                    case 'E':
+                        tasks.add(new PartialEraseTask(getopt.getOptarg()));
+                        break;
+                    case 'e':
+                        tasks.add(new FullEraseTask());
+                        break;
+                    case 'f':
+                        tasks.add(new FlashFileTask(getopt.getOptarg(), false));
+                        break;
+                    case 'F':
+                        tasks.add(new FlashFileTask(getopt.getOptarg(), true));
+
+                        break;
+                    case 'd':
+                        tasks.add(new DumpFlashTask(getopt.getOptarg()));
+                        break;
+                    case 'l':
+                        tasks.add(new DoLockFlashTask());
+                        break;
+                    case 'L':
+                        tasks.add(new DoUnlockFlashTask());
+                        break;
+                    case 'r':
+                        tasks.add(new DoLockFlashReadoutTask());
+                        break;
+                    case 'R':
+                        tasks.add(new DoUnlockFlashReadoutTask());
+                        break;
+                    case 'h':
+                        help();
+                        exit(0);
+                        break;
+                    default:
+                        help();
+                        exit(1);
+                }
             }
+        } catch (Exception e) {
+            help();
+            e.printStackTrace();
         }
 
         System.out.println("stm32flash-util " + port + " at " + baudRate + "bps");
@@ -163,7 +171,6 @@ public class STM32FlashUtil {
                 else
                     size = Integer.decode(flashSize);
 
-
                 System.out.println("Setting flash size to : " + size + "b");
                 d.setFlashSize(size);
             }
@@ -172,98 +179,13 @@ public class STM32FlashUtil {
             if (verbose > 0)
                 System.out.println("DeviceInfo: " + d);
 
-            if (doDump) {
-                System.out.println("Dumping target firmware.");
-                byte[] buffer = flasher.dumpFirmware();
-                if (dumpFilename != null) {
-                    System.out.println("Saving firmware to " + dumpFilename);
-                    FileUtils.writeByteArrayToFile(new File(dumpFilename), buffer);
-                } else {
-                    System.err.println("Could not dump target firmware.");
+            for (Task t : tasks) {
+                if (!t.work(flasher)) {
+                    System.err.println("Failed, Abort.");
                     exit(-1);
                 }
             }
 
-            if (doUnlockFlashRead)
-                if (flasher.unlockFlashRead())
-                    exit(-1);
-
-            if (doUnlockFlashWrite)
-                if (flasher.unlockFlashWrite())
-                    exit(-1);
-
-
-            if (doErase) {
-                if (partialEraseRange != null) {
-                    String[] params = partialEraseRange.split(":");
-
-                    if (params.length != 2) {
-                        System.err.println("bad partial erase parameter, expecting \"startaddress:lenght\" : " + partialEraseRange);
-                        exit(-1);
-                    }
-
-                    int startAddress = Integer.decode(params[0]);
-                    int len = Integer.decode(params[1]);
-
-                    if (startAddress == 0)
-                        startAddress = d.getFlashStart();
-
-                    if (startAddress < d.getFlashStart()) {
-                        System.err.println("bad partial erase parameter, start address is below flash start.");
-                        exit(-1);
-                    }
-
-                    if (startAddress + len > d.getFlashStart() + d.getFlashSize()) {
-                        System.err.println("bad partial erase parameter, end address is after flash end.");
-                        exit(-1);
-                    }
-
-                    System.out.println("Erasing target from 0x" + Integer.toHexString(startAddress) + " to 0x" + Integer.toHexString(startAddress+len) );
-                    if (!flasher.erase(startAddress, len)) {
-                        System.err.println("Could not erase flash.");
-                        exit(-1);
-                    }
-                } else {
-                    System.out.println("Erasing target firmware.");
-                    if (!flasher.eraseFirmware()) {
-                        System.err.println("Could not erase flash.");
-                        exit(-1);
-                    }
-                }
-            }
-
-            if (doFlash) {
-                System.out.println("Flashing " + flashFilename + " to target.");
-
-                STM32Firmware fw = null;
-                try {
-                    fw = new STM32Firmware(flashFilename);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exit(-1);
-                }
-
-                System.out.println("Loaded " + fw + ", md5=" + Hex.encodeHexString( fw.getChecksum() ));
-                if (!flasher.flashFirmware(fw.getBuffer(), STM32Flasher.EraseMode.Partial, doVerify)) {
-                    System.err.println("Firmware flashing failed.");
-                    exit(-1);
-                }
-
-                System.out.println("Firmware was flashed successfully.");
-            }
-
-            if (doLockFlashRead)
-                if (flasher.lockFlashRead())
-                    exit(-1);
-
-            if (doLockFlashWrite)
-                if (flasher.lockFlashWrite())
-                    exit(-1);
-
-            if (doReset) {
-                if (flasher.resetDevice())
-                    exit(-1);
-            }
         } catch (TimeoutException e) {
             System.err.println(e);
             exit(-1);
